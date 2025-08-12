@@ -137,3 +137,56 @@ socket.on("messageHistory", (history) => {
     appendMessage(msg.nickname, msg.text, msg.timestamp)
   );
 });
+
+joinBtn.addEventListener("click", () => {
+  const nickname = (nicknameInput.value || "").trim() || "Anonymous";
+  const room = roomSelect.value;
+
+  if (!room) return alert("Pick a room.");
+
+  if (!socket) {
+    socket = io(SOCKET_SERVER_URL, {
+      transports: ["websocket", "polling"],
+    });
+
+    socket.on("connect", () => {
+      console.log("connected to socket server", socket.id);
+    });
+
+    socket.on("disconnect", (reason) => {
+      appendSystem("Disconnected from server: " + reason);
+    });
+
+    socket.on("joined", (payload) => {
+      appendSystem(`You joined ${payload.room} as ${payload.nickname}`);
+    });
+
+    socket.on("systemMessage", (payload) => {
+      appendSystem(payload.message);
+    });
+
+    socket.on("message", (msg) => {
+      appendMessage(msg.nickname, msg.text, msg.timestamp);
+    });
+
+    socket.on("errorMessage", (err) => {
+      appendSystem("Error: " + (err.message || JSON.stringify(err)));
+    });
+
+    /**  ✅ NEW — Receive full history when joining a room */
+    socket.on("messageHistory", (history) => {
+      // clear old messages before showing history
+      messagesDiv.innerHTML = "";
+      history.forEach((msg) =>
+        appendMessage(msg.nickname, msg.text, msg.timestamp)
+      );
+    });
+  }
+
+  socket.emit("joinRoom", { room, nickname });
+
+  loginSection.classList.add("hidden");
+  chatSection.classList.remove("hidden");
+  roomIndicator.textContent = `Room: ${room}`;
+  messageInput.focus();
+});
