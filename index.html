@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Simple Web Messenger</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Web Messenger (3 rooms)</h1>
+      </header>
+
+      <section id="login-section" class="card">
+        <h2>Join a room</h2>
+        <label>
+          Nickname
+          <input id="nickname" type="text" placeholder="Your nickname" />
+        </label>
+        <label>
+          Room
+          <select id="room-select">
+            <option value="room-1">Room 1</option>
+            <option value="room-2">Room 2</option>
+            <option value="room-3">Room 3</option>
+          </select>
+        </label>
+        <button id="join-btn">Join</button>
+      </section>
+
+      <section id="chat-section" class="card hidden">
+        <div class="chat-header">
+          <div id="room-indicator"></div>
+          <button id="leave-btn" class="ghost">Leave</button>
+        </div>
+
+        <div id="messages" class="messages"></div>
+
+        <form id="send-form" class="send-form">
+          <input
+            id="message-input"
+            autocomplete="off"
+            placeholder="Type a message..."
+          />
+          <button type="submit">Send</button>
+        </form>
+      </section>
+    </div>
+
+    <!-- Socket.IO client via CDN -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="/script.js"></script>
+  </body>
+</html>
