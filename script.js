@@ -131,3 +131,9 @@ sendForm.addEventListener("submit", (ev) => {
   socket.emit("message", { text });
   messageInput.value = "";
 });
+
+socket.on("messageHistory", (history) => {
+  history.forEach((msg) =>
+    appendMessage(msg.nickname, msg.text, msg.timestamp)
+  );
+});

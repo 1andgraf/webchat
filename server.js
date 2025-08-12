@@ -108,3 +108,71 @@ httpServer.listen(PORT, () => {
   console.log(`Socket.IO server listening on port ${PORT}`);
   console.log("Available rooms:", ROOMS.join(", "));
 });
+
+// Keep message history in memory for each room
+const messageHistory = {
+  "room-1": [],
+  "room-2": [],
+  "room-3": [],
+};
+
+// When a user joins a room, send them the stored messages
+socket.on("joinRoom", (payload) => {
+  const { room, nickname } = payload || {};
+  if (!ROOMS.includes(room)) {
+    socket.emit("errorMessage", { message: "Invalid room." });
+    return;
+  }
+
+  // Leave previous room if any
+  if (socket.data.room) {
+    socket.leave(socket.data.room);
+    socket.to(socket.data.room).emit("systemMessage", {
+      message: `${socket.data.nickname} has left the room.`,
+    });
+  }
+
+  socket.data.nickname = nickname || "Anonymous";
+  socket.data.room = room;
+  socket.join(room);
+
+  socket.emit("joined", { room, nickname: socket.data.nickname });
+
+  // Send past messages to the new user
+  socket.emit("messageHistory", messageHistory[room]);
+
+  socket.to(room).emit("systemMessage", {
+    message: `${socket.data.nickname} has joined the room.`,
+  });
+
+  console.log(`${socket.id} (${socket.data.nickname}) joined ${room}`);
+});
+
+// Save each new message to history
+socket.on("message", (payload) => {
+  const text = payload && payload.text ? String(payload.text).trim() : "";
+  if (!text) return;
+
+  const room = socket.data.room;
+  const nickname = socket.data.nickname || "Anonymous";
+  if (!room) {
+    socket.emit("errorMessage", { message: "You must join a room first." });
+    return;
+  }
+
+  const msg = {
+    text,
+    nickname,
+    timestamp: Date.now(),
+  };
+
+  // Save to room history
+  messageHistory[room].push(msg);
+
+  // Optional: limit to last 100 messages
+  if (messageHistory[room].length > 100) {
+    messageHistory[room].shift();
+  }
+
+  io.to(room).emit("message", msg);
+});
