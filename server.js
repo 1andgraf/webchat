@@ -6,7 +6,8 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 
 // ----------------- MongoDB -----------------
-const MONGO_URI = "YOUR_MONGODB_URI_HERE"; // <-- replace with your MongoDB URI
+const MONGO_URI =
+  "mongodb+srv://1andgraf:1234@webchat.zslpi88.mongodb.net/?retryWrites=true&w=majority&appName=webchat"; // <-- replace with your MongoDB URI
 mongoose
   .connect(MONGO_URI)
   .then(() => console.log("✅ Connected to MongoDB"))
