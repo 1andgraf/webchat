@@ -63,11 +63,7 @@ function initSocket() {
   socket.on("connect", () => {
     console.log("Connected to server:", socket.id);
     const overlay = document.getElementById("loading-overlay");
-    if (overlay) {
-      setTimeout(() => {
-        overlay.style.display = "none";
-      }, 1000);
-    }
+    if (overlay) overlay.style.display = "none";
   });
   socket.on("disconnect", (reason) => appendSystem("Disconnected: " + reason));
 
@@ -143,5 +139,9 @@ sendForm.addEventListener("submit", (e) => {
 
 window.addEventListener("load", () => {
   const overlay = document.getElementById("loading-overlay");
-  overlay.style.display = "none";
+  if (overlay) {
+    setTimeout(() => {
+      overlay.style.display = "none";
+    }, 1000);
+  }
 });
