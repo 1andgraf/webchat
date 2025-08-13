@@ -1,32 +1,69 @@
 /* styles.css - simple styling */
-:root {
-  --bg: #fff5f5;
-  --card: #ffffff;
-  --accent: #2b6ef6;
-  --muted: #6b7280;
-}
-
 html,
 body {
   height: 100%;
   margin: 0;
-  font-family: Inter, system-ui, Arial, sans-serif;
-  background: linear-gradient(180deg, var(--bg), #e8eefb);
-  color: #111827;
+  padding: 0;
+  font-family: sans-serif;
+  color: rgb(54, 54, 54);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  width: 100%;
+  background: url(./grain.svg),
+    linear-gradient(
+      270deg,
+      rgb(194, 175, 7),
+      rgb(173, 58, 58),
+      rgb(58, 173, 87),
+      rgb(7, 132, 194),
+      rgb(173, 58, 144),
+      rgb(194, 132, 7)
+    );
+
+  /* Size for each background separately */
+  background-size: auto, 1200% 1200%;
+
+  /* Initial position for each background separately */
+  background-position: center, 0% 50%;
+
+  /* Animate only the gradient's background-position */
+  animation: gradientShift 40s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: center, 0% 50%; /* grain stays centered, gradient moves */
+  }
+  50% {
+    background-position: center, 100% 50%;
+  }
+  100% {
+    background-position: center, 0% 50%;
+  }
+}
+
+#logo {
+  position: absolute;
+  top: 20px;
+  left: 40px;
+  width: 60px;
 }
 
 .container {
   max-width: 800px;
-  margin: 36px auto;
-  padding: 16px;
+  margin: 0;
+  padding: 0px;
 }
 
 .card {
-  background: var(--card);
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.575);
+  width: 600px;
+  border-radius: 20px;
+  border: 2px solid #ffffff5c;
   box-shadow: 0 6px 20px rgba(16, 24, 40, 0.06);
-  padding: 16px;
-  margin-bottom: 16px;
+  padding: 25px;
 }
 
 .hidden {
@@ -38,9 +75,60 @@ header h1 {
   font-size: 20px;
 }
 
+.ja {
+  display: flex;
+}
+
+.info-div {
+  position: relative; /* anchor tooltip positioning to this container */
+  display: inline-block;
+  margin-left: 345px;
+}
+
+#info {
+  width: 25px;
+  filter: contrast(50%);
+  transition: filter 0.3s;
+  cursor: pointer;
+}
+
+#info:hover {
+  filter: contrast(100%);
+}
+
+.info-text {
+  position: absolute;
+  top: 100%; /* directly below the icon */
+  left: 50%;
+  transform: translate(-50%, 6px); /* center horizontally + slide down */
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid #ffffff5c;
+  padding: 15px;
+  padding-top: 0px;
+  padding-bottom: 0px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+
+  /* hidden state */
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease,
+    visibility 0s linear 0.25s;
+}
+
+.info-div:hover .info-text {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0); /* slide up into place */
+  pointer-events: auto;
+  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s;
+}
+
 label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   font-size: 14px;
 }
 
@@ -56,8 +144,8 @@ select,
 }
 
 button {
-  background: var(--accent);
-  color: white;
+  background: rgb(255, 255, 255);
+  color: rgb(58, 58, 58);
   border: none;
   padding: 10px 14px;
   border-radius: 8px;
@@ -65,12 +153,15 @@ button {
   font-weight: 600;
 }
 
-/* ghost button */
-button.ghost {
-  background: transparent;
-  color: var(--accent);
-  border: 1px solid #e6edf6;
-  padding: 8px 10px;
+#join-btn {
+  background: rgba(255, 255, 255, 0.622);
+  border: 2px solid #ffffff5c;
+  padding: 12px 14px;
+  margin-top: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  font-size: large;
 }
 
 /* chat area */
@@ -80,6 +171,25 @@ button.ghost {
   align-items: center;
 }
 
+#leave-btn {
+  background: rgba(255, 255, 255, 0.622);
+  border: 2px solid #ffffff5c;
+  padding: 8px 5px;
+  margin-top: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  width: 70px;
+  font-size: 14px;
+  margin-top: 0;
+}
+
+#send-btn {
+  margin-top: 6px;
+  height: 37px;
+  background: rgba(255, 255, 255, 0.622);
+  border: 2px solid #ffffff5c;
+}
+
 .messages {
   height: 380px;
   overflow-y: auto;
@@ -87,16 +197,22 @@ button.ghost {
   padding: 12px;
   margin: 12px 0;
   border-radius: 8px;
-  background: linear-gradient(#ffffff, #fbfdff);
+  background: rgba(255, 255, 255, 0.318);
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .msg {
   margin-bottom: 10px;
+  border: 1px solid #ffffffb8;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.524);
 }
 
 .msg .meta {
   font-size: 12px;
-  color: var(--muted);
+  color: #242424;
 }
 
 .msg .text {

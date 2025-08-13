@@ -3,21 +3,41 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Simple Web Messenger</title>
+    <title>Web Messenger 1andgraf</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
+    <a target="_blank" href="https://github.com/1andgraf/">
+      <img id="logo" src="./logo.png"
+    /></a>
+
     <div id="loading-overlay">
       <div class="spinner"></div>
     </div>
-
     <div class="container">
-      <header>
-        <h1>Web Messenger</h1>
-      </header>
-
       <section id="login-section" class="card">
-        <h2>Join a room</h2>
+        <div class="ja">
+          <header>
+            <h1 style="font-size: 30px">Web Messenger</h1>
+          </header>
+          <div class="info-div">
+            <img id="info" src="./information.png" alt="" />
+            <div class="info-text">
+              <p>
+                Simple web messenger using Socket.IO <br />
+                <br />
+                Github:
+                <a
+                  href="https://github.com/1andgraf/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >https://github.com/1andgraf/</a
+                >
+              </p>
+            </div>
+          </div>
+        </div>
+        <h2 style="font-size: 20px; margin-top: 30px">Join a room:</h2>
         <label>
           Nickname
           <input id="nickname" type="text" placeholder="Your nickname" />
@@ -35,7 +55,7 @@
 
       <section id="chat-section" class="card hidden">
         <div class="chat-header">
-          <div id="room-indicator"></div>
+          <div style="margin-top: 0" id="room-indicator"></div>
           <button id="leave-btn" class="ghost">Leave</button>
         </div>
 
@@ -46,8 +66,9 @@
             id="message-input"
             autocomplete="off"
             placeholder="Type a message..."
+            maxlength="60"
           />
-          <button type="submit">Send</button>
+          <button id="send-btn" type="submit">Send</button>
         </form>
       </section>
     </div>

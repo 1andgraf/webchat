@@ -132,6 +132,12 @@ leaveBtn.addEventListener("click", () => {
 sendForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const text = (messageInput.value || "").trim();
+
+  if (text.length > 60) {
+    alert("Message too long! Please keep it under 60 characters.");
+    return;
+  }
+
   if (!text || !socket) return;
   socket.emit("message", { text });
   messageInput.value = "";
@@ -142,6 +148,6 @@ window.addEventListener("load", () => {
   if (overlay) {
     setTimeout(() => {
       overlay.style.display = "none";
-    }, 1000);
+    }, 500);
   }
 });
