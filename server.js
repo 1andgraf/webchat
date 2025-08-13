@@ -6,7 +6,7 @@ const { Server } = require("socket.io");
 const cors = require("cors");
 
 const MONGO_URI =
-  "mongodb+srv://username:password@cluster0.mongodb.net/myDB?retryWrites=true&w=majority";
+  "mongodb+srv://1andgraf:1234@webchat.zslpi88.mongodb.net/?retryWrites=true&w=majority&appName=webchat";
 
 mongoose
   .connect(MONGO_URI)
@@ -79,12 +79,13 @@ io.on("connection", (socket) => {
 
     console.log(`${socket.id} (${socket.data.nickname}) joined ${room}`);
 
+    // server.js, inside joinRoom
     try {
-      // send last 50 messages in ascending order
+      // load last 50 messages from this room
       const lastMessages = await Message.find({ room })
         .sort({ timestamp: 1 })
         .limit(50);
-      socket.emit("messageHistory", lastMessages); // ✅ match frontend
+      socket.emit("messageHistory", lastMessages); // <-- same as frontend
     } catch (err) {
       console.error("Error loading messages:", err);
     }
