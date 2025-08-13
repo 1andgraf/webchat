@@ -54,7 +54,7 @@ function escapeHtml(str) {
   });
 }
 
-// ------------------ Initialize socket ------------------
+// ------------------ Join / Rejoin ------------------
 function initSocket() {
   if (socket) return;
 
@@ -63,9 +63,14 @@ function initSocket() {
   socket.on("connect", () => console.log("Connected to server:", socket.id));
   socket.on("disconnect", (reason) => appendSystem("Disconnected: " + reason));
 
-  socket.on("joined", ({ room, nickname }) =>
-    appendSystem(`You joined ${room} as ${nickname}`)
-  );
+  socket.on("joined", ({ room, nickname }) => {
+    appendSystem(`You joined ${room} as ${nickname}`);
+    localStorage.setItem("currentRoom", room);
+    localStorage.setItem("nickname", nickname);
+    loginSection.classList.add("hidden");
+    chatSection.classList.remove("hidden");
+    roomIndicator.textContent = `Room: ${room}`;
+  });
 
   socket.on("systemMessage", (msg) => appendSystem(msg.message));
 
@@ -85,28 +90,37 @@ function initSocket() {
   );
 }
 
-// ------------------ UI ------------------
+// ------------------ Auto Reconnect on Refresh ------------------
+window.addEventListener("load", () => {
+  const savedRoom = localStorage.getItem("currentRoom");
+  const savedNick = localStorage.getItem("nickname");
+
+  if (savedRoom) {
+    initSocket();
+    socket.emit("joinRoom", {
+      room: savedRoom,
+      nickname: savedNick || "Anonymous",
+    });
+  }
+});
+
+// ------------------ Join Button ------------------
 joinBtn.addEventListener("click", () => {
   const nickname = (nicknameInput.value || "").trim() || "Anonymous";
   const room = roomSelect.value;
   if (!room) return alert("Pick a room.");
 
   initSocket();
-
-  // emit after listeners are registered
   socket.emit("joinRoom", { room, nickname });
-
-  loginSection.classList.add("hidden");
-  chatSection.classList.remove("hidden");
-  roomIndicator.textContent = `Room: ${room}`;
-  messagesDiv.innerHTML = "";
-  messageInput.focus();
 });
 
+// ------------------ Leave Button ------------------
 leaveBtn.addEventListener("click", () => {
   if (!socket) return;
   socket.disconnect();
   socket = null;
+  localStorage.removeItem("currentRoom");
+  localStorage.removeItem("nickname");
   loginSection.classList.remove("hidden");
   chatSection.classList.add("hidden");
 });
