@@ -1,18 +1,39 @@
-// server.js
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
+const mongoose = require("mongoose");
 
+// ==== CONFIG ====
+const MONGO_URI =
+  process.env.MONGO_URI ||
+  "mongodb+srv://1andgraf:1234@webchat.zslpi88.mongodb.net/?retryWrites=true&w=majority&appName=webchat";
+const PORT = process.env.PORT || 3000;
+const ROOMS = ["room-1", "room-2", "room-3"];
+
+// ==== CONNECT TO MONGODB ====
+mongoose
+  .connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log("✅ Connected to MongoDB"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
+
+// ==== MESSAGE MODEL ====
+const messageSchema = new mongoose.Schema({
+  room: String,
+  nickname: String,
+  text: String,
+  timestamp: { type: Date, default: Date.now },
+});
+const Message = mongoose.model("Message", messageSchema);
+
+// ==== EXPRESS & SOCKET.IO SETUP ====
 const app = express();
 app.use(cors());
-
-app.get("/", (req, res) => {
-  res.send("Socket.IO chat server is running");
-});
+app.get("/", (req, res) =>
+  res.send("Socket.IO chat server is running with MongoDB")
+);
 
 const httpServer = http.createServer(app);
-
 const io = new Server(httpServer, {
   cors: {
     origin: "*",
@@ -20,28 +41,19 @@ const io = new Server(httpServer, {
   },
 });
 
-const ROOMS = ["room-1", "room-2", "room-3"];
-
-// ✅ Store message history for each room in memory
-const messageHistory = {
-  "room-1": [],
-  "room-2": [],
-  "room-3": [],
-};
-
+// ==== SOCKET.IO LOGIC ====
 io.on("connection", (socket) => {
   console.log("A client connected:", socket.id);
   socket.data.nickname = "Anonymous";
   socket.data.room = null;
 
-  socket.on("joinRoom", (payload) => {
-    const { room, nickname } = payload || {};
+  socket.on("joinRoom", async ({ room, nickname }) => {
     if (!ROOMS.includes(room)) {
       socket.emit("errorMessage", { message: "Invalid room." });
       return;
     }
 
-    // Leave old room if any
+    // Leave previous room
     if (socket.data.room) {
       socket.leave(socket.data.room);
       socket.to(socket.data.room).emit("systemMessage", {
@@ -55,46 +67,41 @@ io.on("connection", (socket) => {
 
     socket.emit("joined", { room, nickname: socket.data.nickname });
 
-    // ✅ Send stored messages to new user
-    socket.emit("messageHistory", messageHistory[room]);
+    // ✅ Fetch last 50 messages from DB
+    const history = await Message.find({ room })
+      .sort({ timestamp: 1 })
+      .limit(50);
+    socket.emit("messageHistory", history);
 
     socket.to(room).emit("systemMessage", {
       message: `${socket.data.nickname} has joined the room.`,
     });
 
-    console.log(`${socket.id} (${socket.data.nickname}) joined ${room}`);
+    console.log(`${socket.data.nickname} joined ${room}`);
   });
 
-  socket.on("message", (payload) => {
-    const text = payload && payload.text ? String(payload.text).trim() : "";
-    if (!text) return;
+  socket.on("message", async ({ text }) => {
+    const trimmedText = (text || "").trim();
+    if (!trimmedText) return;
 
     const room = socket.data.room;
-    const nickname = socket.data.nickname || "Anonymous";
     if (!room) {
       socket.emit("errorMessage", { message: "You must join a room first." });
       return;
     }
 
-    const msg = {
-      text,
-      nickname,
-      timestamp: Date.now(),
-    };
+    const msg = new Message({
+      room,
+      nickname: socket.data.nickname,
+      text: trimmedText,
+    });
 
-    // ✅ Save to history for that room
-    messageHistory[room].push(msg);
-
-    // ✅ Optional: limit to last 100 messages
-    if (messageHistory[room].length > 100) {
-      messageHistory[room].shift();
-    }
+    await msg.save(); // ✅ Save to DB
 
     io.to(room).emit("message", msg);
   });
 
-  socket.on("disconnect", (reason) => {
-    console.log("Client disconnected:", socket.id, "reason:", reason);
+  socket.on("disconnect", () => {
     const room = socket.data.room;
     const nickname = socket.data.nickname;
     if (room) {
@@ -102,10 +109,11 @@ io.on("connection", (socket) => {
         message: `${nickname} has disconnected.`,
       });
     }
+    console.log("Client disconnected:", socket.id);
   });
 });
 
-const PORT = process.env.PORT || 3000;
+// ==== START SERVER ====
 httpServer.listen(PORT, () => {
-  console.log(`Socket.IO server listening on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
