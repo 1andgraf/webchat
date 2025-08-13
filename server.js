@@ -1,107 +1,97 @@
+// server.js
+// Small Express + Socket.IO server that supports 3 rooms.
+// Deploy this to a host that supports WebSockets (Render, Railway, Fly, etc).
+
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
-const mongoose = require("mongoose");
 
-// ==== CONFIG ====
-const MONGO_URI =
-  process.env.MONGO_URI ||
-  "mongodb+srv://1andgraf:1234@webchat.zslpi88.mongodb.net/?retryWrites=true&w=majority&appName=webchat";
-const PORT = process.env.PORT || 3000;
-const ROOMS = ["room-1", "room-2", "room-3"];
-
-// ==== CONNECT TO MONGODB ====
-mongoose
-  .connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log("✅ Connected to MongoDB"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
-
-// ==== MESSAGE MODEL ====
-const messageSchema = new mongoose.Schema({
-  room: String,
-  nickname: String,
-  text: String,
-  timestamp: { type: Date, default: Date.now },
-});
-const Message = mongoose.model("Message", messageSchema);
-
-// ==== EXPRESS & SOCKET.IO SETUP ====
 const app = express();
-app.use(cors());
-app.get("/", (req, res) =>
-  res.send("Socket.IO chat server is running with MongoDB")
-);
+app.use(cors()); // allow connections from your frontend domain(s)
+
+// simple health route (useful for deployment checks)
+app.get("/", (req, res) => {
+  res.send("Socket.IO chat server is running");
+});
 
 const httpServer = http.createServer(app);
+
+// create socket.io server
 const io = new Server(httpServer, {
+  // Optional: configure CORS to limit origins in production
   cors: {
-    origin: "*",
+    origin: "*", // change to your Vercel URL in production e.g. https://your-site.vercel.app
     methods: ["GET", "POST"],
   },
 });
 
-// ==== SOCKET.IO LOGIC ====
+const ROOMS = ["room-1", "room-2", "room-3"];
+
 io.on("connection", (socket) => {
   console.log("A client connected:", socket.id);
+
+  // keep track of current room and nickname on this socket
   socket.data.nickname = "Anonymous";
   socket.data.room = null;
 
-  socket.on("joinRoom", async ({ room, nickname }) => {
+  // joinRoom payload: { room: 'room-1', nickname: 'Bob' }
+  socket.on("joinRoom", (payload) => {
+    const { room, nickname } = payload || {};
     if (!ROOMS.includes(room)) {
       socket.emit("errorMessage", { message: "Invalid room." });
       return;
     }
 
-    // Leave previous room
+    // Leave previous room if any
     if (socket.data.room) {
       socket.leave(socket.data.room);
+      // notify others in previous room
       socket.to(socket.data.room).emit("systemMessage", {
         message: `${socket.data.nickname} has left the room.`,
       });
     }
 
+    // save nickname and room
     socket.data.nickname = nickname || "Anonymous";
     socket.data.room = room;
     socket.join(room);
 
+    // Confirmation to the joining user
     socket.emit("joined", { room, nickname: socket.data.nickname });
 
-    // ✅ Fetch last 50 messages from DB
-    const history = await Message.find({ room })
-      .sort({ timestamp: 1 })
-      .limit(50);
-    socket.emit("messageHistory", history);
-
+    // Notify room
     socket.to(room).emit("systemMessage", {
       message: `${socket.data.nickname} has joined the room.`,
     });
 
-    console.log(`${socket.data.nickname} joined ${room}`);
+    console.log(`${socket.id} (${socket.data.nickname}) joined ${room}`);
   });
 
-  socket.on("message", async ({ text }) => {
-    const trimmedText = (text || "").trim();
-    if (!trimmedText) return;
+  // message payload: { text: 'hello' }
+  socket.on("message", (payload) => {
+    const text = payload && payload.text ? String(payload.text).trim() : "";
+    if (!text) return;
 
     const room = socket.data.room;
+    const nickname = socket.data.nickname || "Anonymous";
     if (!room) {
       socket.emit("errorMessage", { message: "You must join a room first." });
       return;
     }
 
-    const msg = new Message({
-      room,
-      nickname: socket.data.nickname,
-      text: trimmedText,
-    });
+    const msg = {
+      text,
+      nickname,
+      timestamp: Date.now(),
+    };
 
-    await msg.save(); // ✅ Save to DB
-
+    // send to everyone in room (including sender)
     io.to(room).emit("message", msg);
   });
 
-  socket.on("disconnect", () => {
+  socket.on("disconnect", (reason) => {
+    console.log("Client disconnected:", socket.id, "reason:", reason);
     const room = socket.data.room;
     const nickname = socket.data.nickname;
     if (room) {
@@ -109,11 +99,12 @@ io.on("connection", (socket) => {
         message: `${nickname} has disconnected.`,
       });
     }
-    console.log("Client disconnected:", socket.id);
   });
 });
 
-// ==== START SERVER ====
+// start server
+const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Socket.IO server listening on port ${PORT}`);
+  console.log("Available rooms:", ROOMS.join(", "));
 });
