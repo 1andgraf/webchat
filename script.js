@@ -60,7 +60,11 @@ function initSocket() {
 
   socket = io(SOCKET_SERVER_URL, { transports: ["websocket", "polling"] });
 
-  socket.on("connect", () => console.log("Connected to server:", socket.id));
+  socket.on("connect", () => {
+    console.log("Connected to server:", socket.id);
+    const overlay = document.getElementById("loading-overlay");
+    if (overlay) overlay.style.display = "none";
+  });
   socket.on("disconnect", (reason) => appendSystem("Disconnected: " + reason));
 
   socket.on("joined", ({ room, nickname }) => {
@@ -131,4 +135,9 @@ sendForm.addEventListener("submit", (e) => {
   if (!text || !socket) return;
   socket.emit("message", { text });
   messageInput.value = "";
+});
+
+window.addEventListener("load", () => {
+  const overlay = document.getElementById("loading-overlay");
+  overlay.style.display = "none";
 });
