@@ -1,8 +1,8 @@
-// script.js - frontend behavior for chat
-const SOCKET_SERVER_URL = (function () {
-  if (location.hostname === "localhost") return "http://localhost:3000";
-  return "https://webchat-5yr5.onrender.com"; // replace with your deployed server
-})();
+// script.js
+const SOCKET_SERVER_URL =
+  location.hostname === "localhost"
+    ? "http://localhost:3000"
+    : "https://webchat-5yr5.onrender.com";
 
 let socket = null;
 
@@ -17,13 +17,10 @@ const roomIndicator = document.getElementById("room-indicator");
 const sendForm = document.getElementById("send-form");
 const messageInput = document.getElementById("message-input");
 
-// format timestamp
 function formatTime(ts) {
-  const d = new Date(ts);
-  return d.toLocaleTimeString();
+  return new Date(ts).toLocaleTimeString();
 }
 
-// append system message
 function appendSystem(text) {
   const node = document.createElement("div");
   node.className = "system";
@@ -32,7 +29,6 @@ function appendSystem(text) {
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-// append user message
 function appendMessage(nickname, text, ts) {
   const wrapper = document.createElement("div");
   wrapper.className = "msg";
@@ -46,7 +42,6 @@ function appendMessage(nickname, text, ts) {
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-// simple escaping
 function escapeHtml(str) {
   return String(str || "").replace(/[&<>"']/g, function (m) {
     return {
@@ -59,61 +54,55 @@ function escapeHtml(str) {
   });
 }
 
-// initialize socket if not created
+// ------------------ Initialize socket ------------------
 function initSocket() {
   if (socket) return;
 
   socket = io(SOCKET_SERVER_URL, { transports: ["websocket", "polling"] });
 
-  socket.on("connect", () => {
-    console.log("Connected to socket server", socket.id);
-  });
+  socket.on("connect", () => console.log("Connected to server:", socket.id));
+  socket.on("disconnect", (reason) => appendSystem("Disconnected: " + reason));
 
-  socket.on("disconnect", (reason) => {
-    appendSystem("Disconnected from server: " + reason);
-  });
+  socket.on("joined", ({ room, nickname }) =>
+    appendSystem(`You joined ${room} as ${nickname}`)
+  );
 
-  socket.on("joined", (payload) => {
-    appendSystem(`You joined ${payload.room} as ${payload.nickname}`);
-  });
+  socket.on("systemMessage", (msg) => appendSystem(msg.message));
 
-  socket.on("systemMessage", (payload) => {
-    appendSystem(payload.message);
-  });
+  socket.on("message", (msg) =>
+    appendMessage(msg.nickname, msg.text, new Date(msg.timestamp))
+  );
 
-  socket.on("message", (msg) => {
-    appendMessage(msg.nickname, msg.text, msg.timestamp);
-  });
-
-  socket.on("errorMessage", (err) => {
-    appendSystem("Error: " + (err.message || JSON.stringify(err)));
-  });
-
-  // ✅ Receive full history when joining a room
   socket.on("messageHistory", (history) => {
-    messagesDiv.innerHTML = ""; // clear old messages
+    messagesDiv.innerHTML = "";
     history.forEach((msg) =>
-      appendMessage(msg.nickname, msg.text, msg.timestamp)
+      appendMessage(msg.nickname, msg.text, new Date(msg.timestamp))
     );
   });
+
+  socket.on("errorMessage", (err) =>
+    appendSystem("Error: " + (err.message || err))
+  );
 }
 
-// join button
+// ------------------ UI ------------------
 joinBtn.addEventListener("click", () => {
   const nickname = (nicknameInput.value || "").trim() || "Anonymous";
   const room = roomSelect.value;
   if (!room) return alert("Pick a room.");
 
   initSocket();
+
+  // emit after listeners are registered
   socket.emit("joinRoom", { room, nickname });
 
   loginSection.classList.add("hidden");
   chatSection.classList.remove("hidden");
   roomIndicator.textContent = `Room: ${room}`;
+  messagesDiv.innerHTML = "";
   messageInput.focus();
 });
 
-// leave button
 leaveBtn.addEventListener("click", () => {
   if (!socket) return;
   socket.disconnect();
@@ -122,15 +111,10 @@ leaveBtn.addEventListener("click", () => {
   chatSection.classList.add("hidden");
 });
 
-// send message
-sendForm.addEventListener("submit", (ev) => {
-  ev.preventDefault();
+sendForm.addEventListener("submit", (e) => {
+  e.preventDefault();
   const text = (messageInput.value || "").trim();
-  if (!text) return;
-  if (!socket) {
-    alert("Not connected.");
-    return;
-  }
+  if (!text || !socket) return;
   socket.emit("message", { text });
   messageInput.value = "";
 });
