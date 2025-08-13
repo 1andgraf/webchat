@@ -1,12 +1,7 @@
 // script.js - frontend behavior for chat
-// IMPORTANT: set SOCKET_SERVER_URL to your deployed socket server URL, e.g.
-// const SOCKET_SERVER_URL = "https://your-socket-server.example.com";
 const SOCKET_SERVER_URL = (function () {
-  // helpful default for local development:
   if (location.hostname === "localhost") return "http://localhost:3000";
-  // For production, instruct the user to set this in the deployed frontend (or edit below)
-  // Replace the placeholder with your server URL after you deploy the server.
-  return "https://webchat-5yr5.onrender.com";
+  return "https://webchat-5yr5.onrender.com"; // replace with your deployed server
 })();
 
 let socket = null;
@@ -22,11 +17,13 @@ const roomIndicator = document.getElementById("room-indicator");
 const sendForm = document.getElementById("send-form");
 const messageInput = document.getElementById("message-input");
 
+// format timestamp
 function formatTime(ts) {
   const d = new Date(ts);
   return d.toLocaleTimeString();
 }
 
+// append system message
 function appendSystem(text) {
   const node = document.createElement("div");
   node.className = "system";
@@ -35,6 +32,7 @@ function appendSystem(text) {
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
+// append user message
 function appendMessage(nickname, text, ts) {
   const wrapper = document.createElement("div");
   wrapper.className = "msg";
@@ -61,65 +59,70 @@ function escapeHtml(str) {
   });
 }
 
+// initialize socket if not created
+function initSocket() {
+  if (socket) return;
+
+  socket = io(SOCKET_SERVER_URL, { transports: ["websocket", "polling"] });
+
+  socket.on("connect", () => {
+    console.log("Connected to socket server", socket.id);
+  });
+
+  socket.on("disconnect", (reason) => {
+    appendSystem("Disconnected from server: " + reason);
+  });
+
+  socket.on("joined", (payload) => {
+    appendSystem(`You joined ${payload.room} as ${payload.nickname}`);
+  });
+
+  socket.on("systemMessage", (payload) => {
+    appendSystem(payload.message);
+  });
+
+  socket.on("message", (msg) => {
+    appendMessage(msg.nickname, msg.text, msg.timestamp);
+  });
+
+  socket.on("errorMessage", (err) => {
+    appendSystem("Error: " + (err.message || JSON.stringify(err)));
+  });
+
+  // ✅ Receive full history when joining a room
+  socket.on("messageHistory", (history) => {
+    messagesDiv.innerHTML = ""; // clear old messages
+    history.forEach((msg) =>
+      appendMessage(msg.nickname, msg.text, msg.timestamp)
+    );
+  });
+}
+
+// join button
 joinBtn.addEventListener("click", () => {
   const nickname = (nicknameInput.value || "").trim() || "Anonymous";
   const room = roomSelect.value;
-
   if (!room) return alert("Pick a room.");
 
-  // If no socket yet, create socket
-  if (!socket) {
-    socket = io(SOCKET_SERVER_URL, {
-      transports: ["websocket", "polling"], // Socket.IO will pick best available
-    });
-
-    socket.on("connect", () => {
-      console.log("connected to socket server", socket.id);
-    });
-
-    socket.on("disconnect", (reason) => {
-      appendSystem("Disconnected from server: " + reason);
-    });
-
-    socket.on("joined", (payload) => {
-      appendSystem(`You joined ${payload.room} as ${payload.nickname}`);
-    });
-
-    socket.on("systemMessage", (payload) => {
-      appendSystem(payload.message);
-    });
-
-    socket.on("message", (msg) => {
-      appendMessage(msg.nickname, msg.text, msg.timestamp);
-    });
-
-    socket.on("errorMessage", (err) => {
-      appendSystem("Error: " + (err.message || JSON.stringify(err)));
-    });
-  }
-
-  // send join request
+  initSocket();
   socket.emit("joinRoom", { room, nickname });
 
-  // UI switch
   loginSection.classList.add("hidden");
   chatSection.classList.remove("hidden");
   roomIndicator.textContent = `Room: ${room}`;
   messageInput.focus();
-
-  // clear messages area
-  messagesDiv.innerHTML = "";
 });
 
+// leave button
 leaveBtn.addEventListener("click", () => {
   if (!socket) return;
-  // simply reload to reset client-side state, or we could emit leave and go back to join UI
   socket.disconnect();
   socket = null;
   loginSection.classList.remove("hidden");
   chatSection.classList.add("hidden");
 });
 
+// send message
 sendForm.addEventListener("submit", (ev) => {
   ev.preventDefault();
   const text = (messageInput.value || "").trim();
@@ -130,63 +133,4 @@ sendForm.addEventListener("submit", (ev) => {
   }
   socket.emit("message", { text });
   messageInput.value = "";
-});
-
-socket.on("messageHistory", (history) => {
-  history.forEach((msg) =>
-    appendMessage(msg.nickname, msg.text, msg.timestamp)
-  );
-});
-
-joinBtn.addEventListener("click", () => {
-  const nickname = (nicknameInput.value || "").trim() || "Anonymous";
-  const room = roomSelect.value;
-
-  if (!room) return alert("Pick a room.");
-
-  if (!socket) {
-    socket = io(SOCKET_SERVER_URL, {
-      transports: ["websocket", "polling"],
-    });
-
-    socket.on("connect", () => {
-      console.log("connected to socket server", socket.id);
-    });
-
-    socket.on("disconnect", (reason) => {
-      appendSystem("Disconnected from server: " + reason);
-    });
-
-    socket.on("joined", (payload) => {
-      appendSystem(`You joined ${payload.room} as ${payload.nickname}`);
-    });
-
-    socket.on("systemMessage", (payload) => {
-      appendSystem(payload.message);
-    });
-
-    socket.on("message", (msg) => {
-      appendMessage(msg.nickname, msg.text, msg.timestamp);
-    });
-
-    socket.on("errorMessage", (err) => {
-      appendSystem("Error: " + (err.message || JSON.stringify(err)));
-    });
-
-    /**  ✅ NEW — Receive full history when joining a room */
-    socket.on("messageHistory", (history) => {
-      // clear old messages before showing history
-      messagesDiv.innerHTML = "";
-      history.forEach((msg) =>
-        appendMessage(msg.nickname, msg.text, msg.timestamp)
-      );
-    });
-  }
-
-  socket.emit("joinRoom", { room, nickname });
-
-  loginSection.classList.add("hidden");
-  chatSection.classList.remove("hidden");
-  roomIndicator.textContent = `Room: ${room}`;
-  messageInput.focus();
 });

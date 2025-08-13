@@ -1,27 +1,45 @@
 // server.js
-// Small Express + Socket.IO server that supports 3 rooms.
-// Deploy this to a host that supports WebSockets (Render, Railway, Fly, etc).
-
+const mongoose = require("mongoose");
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
 
-const app = express();
-app.use(cors()); // allow connections from your frontend domain(s)
+const MONGO_URI =
+  "mongodb+srv://username:password@cluster0.mongodb.net/myDB?retryWrites=true&w=majority";
 
-// simple health route (useful for deployment checks)
+mongoose
+  .connect(MONGO_URI)
+  .then(() => console.log("✅ Connected to MongoDB"))
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err);
+    process.exit(1);
+  });
+
+// Message schema
+const messageSchema = new mongoose.Schema({
+  room: { type: String, required: true },
+  nickname: { type: String, required: true },
+  text: { type: String, required: true },
+  timestamp: { type: Date, default: Date.now },
+});
+
+const Message = mongoose.model("Message", messageSchema);
+
+// Express setup
+const app = express();
+app.use(cors());
+
 app.get("/", (req, res) => {
   res.send("Socket.IO chat server is running");
 });
 
 const httpServer = http.createServer(app);
 
-// create socket.io server
+// Socket.IO setup
 const io = new Server(httpServer, {
-  // Optional: configure CORS to limit origins in production
   cors: {
-    origin: "*", // change to your Vercel URL in production e.g. https://your-site.vercel.app
+    origin: "*", // update in production
     methods: ["GET", "POST"],
   },
 });
@@ -29,64 +47,85 @@ const io = new Server(httpServer, {
 const ROOMS = ["room-1", "room-2", "room-3"];
 
 io.on("connection", (socket) => {
-  console.log("A client connected:", socket.id);
+  console.log("Client connected:", socket.id);
 
-  // keep track of current room and nickname on this socket
   socket.data.nickname = "Anonymous";
   socket.data.room = null;
 
-  // joinRoom payload: { room: 'room-1', nickname: 'Bob' }
-  socket.on("joinRoom", (payload) => {
-    const { room, nickname } = payload || {};
+  // joinRoom: { room, nickname }
+  socket.on("joinRoom", async ({ room, nickname }) => {
     if (!ROOMS.includes(room)) {
       socket.emit("errorMessage", { message: "Invalid room." });
       return;
     }
 
-    // Leave previous room if any
+    // leave previous room
     if (socket.data.room) {
       socket.leave(socket.data.room);
-      // notify others in previous room
       socket.to(socket.data.room).emit("systemMessage", {
         message: `${socket.data.nickname} has left the room.`,
       });
     }
 
-    // save nickname and room
     socket.data.nickname = nickname || "Anonymous";
     socket.data.room = room;
     socket.join(room);
 
-    // Confirmation to the joining user
     socket.emit("joined", { room, nickname: socket.data.nickname });
 
-    // Notify room
     socket.to(room).emit("systemMessage", {
       message: `${socket.data.nickname} has joined the room.`,
     });
 
     console.log(`${socket.id} (${socket.data.nickname}) joined ${room}`);
+
+    try {
+      // send last 50 messages in ascending order
+      const lastMessages = await Message.find({ room })
+        .sort({ timestamp: 1 })
+        .limit(50);
+      socket.emit("messageHistory", lastMessages); // ✅ match frontend
+    } catch (err) {
+      console.error("Error loading messages:", err);
+    }
   });
 
-  // message payload: { text: 'hello' }
-  socket.on("message", (payload) => {
-    const text = payload && payload.text ? String(payload.text).trim() : "";
+  // new message: { text }
+  // new message: { text }
+  socket.on("message", async ({ text }) => {
+    text = text?.trim();
     if (!text) return;
 
     const room = socket.data.room;
     const nickname = socket.data.nickname || "Anonymous";
+
     if (!room) {
       socket.emit("errorMessage", { message: "You must join a room first." });
       return;
     }
 
-    const msg = {
-      text,
-      nickname,
-      timestamp: Date.now(),
-    };
+    const msg = { room, nickname, text, timestamp: new Date() };
 
-    // send to everyone in room (including sender)
+    try {
+      // save to MongoDB
+      await Message.create(msg);
+
+      // Keep only last 100 messages per room
+      const count = await Message.countDocuments({ room });
+      if (count > 100) {
+        // delete oldest messages
+        const excess = count - 100;
+        await Message.find({ room })
+          .sort({ timestamp: 1 })
+          .limit(excess)
+          .then((oldMessages) =>
+            oldMessages.forEach((m) => m.deleteOne().catch(console.error))
+          );
+      }
+    } catch (err) {
+      console.error("Error saving message:", err);
+    }
+
     io.to(room).emit("message", msg);
   });
 
@@ -102,7 +141,6 @@ io.on("connection", (socket) => {
   });
 });
 
-// start server
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`Socket.IO server listening on port ${PORT}`);
