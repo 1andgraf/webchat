@@ -63,7 +63,11 @@ function initSocket() {
   socket.on("connect", () => {
     console.log("Connected to server:", socket.id);
     const overlay = document.getElementById("loading-overlay");
-    if (overlay) overlay.style.display = "none";
+    if (overlay) {
+      setTimeout(() => {
+        overlay.style.display = "none";
+      }, 1000);
+    }
   });
   socket.on("disconnect", (reason) => appendSystem("Disconnected: " + reason));
 
