@@ -67,11 +67,11 @@ io.on("connection", (socket) => {
       message: `${socket.data.nickname} has joined the room.`,
     });
 
-    // Load last 50 messages from this room
+    // Load last 1000 messages from this room
     try {
       const lastMessages = await Message.find({ room })
         .sort({ timestamp: 1 }) // oldest first
-        .limit(50);
+        .limit(1000);
       socket.emit("messageHistory", lastMessages);
     } catch (err) {
       console.error("Error loading messages:", err);
