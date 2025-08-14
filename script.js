@@ -16,6 +16,7 @@ const messagesDiv = document.getElementById("messages");
 const roomIndicator = document.getElementById("room-indicator");
 const sendForm = document.getElementById("send-form");
 const messageInput = document.getElementById("message-input");
+const settingsSection = document.getElementById("settings");
 
 function formatTime(ts) {
   return new Date(ts).toLocaleTimeString();
@@ -29,14 +30,23 @@ function appendSystem(text) {
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-function appendMessage(nickname, text, ts) {
+function appendMessage(nickname, text, ts, profilePic = "") {
   const wrapper = document.createElement("div");
   wrapper.className = "msg";
+
+  let content;
+  if (text.includes(".gif") || text.includes("giphy.com/media")) {
+    content = `<img src="${text}" class="gif-msg">`;
+  } else {
+    content = escapeHtml(text);
+  }
+
   wrapper.innerHTML = `
-    <div class="meta"><strong>${escapeHtml(
-      nickname
-    )}</strong> · <span>${formatTime(ts)}</span></div>
-    <div class="text">${escapeHtml(text)}</div>
+    <div class="meta">
+      ${profilePic ? `<img src="${profilePic}" class="avatar">` : ""}
+      <strong>${escapeHtml(nickname)}</strong> · <span>${formatTime(ts)}</span>
+    </div>
+    <div class="text">${content}</div>
   `;
   messagesDiv.appendChild(wrapper);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -72,6 +82,7 @@ function initSocket() {
     localStorage.setItem("currentRoom", room);
     localStorage.setItem("nickname", nickname);
     loginSection.classList.add("hidden");
+    settingsSection.classList.remove("hidden");
     chatSection.classList.remove("hidden");
     roomIndicator.textContent = `Room: ${room}`;
   });
@@ -126,6 +137,7 @@ leaveBtn.addEventListener("click", () => {
   localStorage.removeItem("currentRoom");
   localStorage.removeItem("nickname");
   loginSection.classList.remove("hidden");
+  settingsSection.classList.add("hidden");
   chatSection.classList.add("hidden");
 });
 
@@ -150,4 +162,61 @@ window.addEventListener("load", () => {
       overlay.style.display = "none";
     }, 500);
   }
+});
+
+const themeSelect = document.getElementById("theme-select");
+
+themeSelect.addEventListener("change", () => {
+  if (themeSelect.value === "dark") {
+    document.body.classList.add("dark-theme");
+  } else {
+    document.body.classList.remove("dark-theme");
+  }
+});
+
+function stringToColor(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const c = (hash & 0x00ffffff).toString(16).toUpperCase();
+  return "#" + "00000".substring(0, 6 - c.length) + c; // hex color
+}
+
+const fontSizeSlider = document.getElementById("font-size-slider");
+
+fontSizeSlider.addEventListener("input", () => {
+  const size = fontSizeSlider.value + "px";
+  document.documentElement.style.setProperty("--chat-font-size", size);
+});
+
+const GIPHY_API_KEY = "lhknu4SqyJgfLTMw34f00P1lgcbubgZ2";
+const gifSearch = document.getElementById("gif-search");
+const gifResults = document.getElementById("gif-results");
+
+gifSearch.addEventListener("input", async () => {
+  const query = gifSearch.value.trim();
+  if (!query) {
+    gifResults.innerHTML = "";
+    return;
+  }
+
+  const res = await fetch(
+    `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(
+      query
+    )}&limit=8&rating=pg`
+  );
+  const data = await res.json();
+
+  gifResults.innerHTML = "";
+  data.data.forEach((gif) => {
+    const imgUrl = gif.images.fixed_height.url;
+    const img = document.createElement("img");
+    img.src = imgUrl;
+    img.classList.add("gif-thumb");
+    img.addEventListener("click", () => {
+      socket.emit("message", { text: imgUrl }); // send gif URL as message
+    });
+    gifResults.appendChild(img);
+  });
 });

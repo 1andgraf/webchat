@@ -70,8 +70,8 @@ io.on("connection", (socket) => {
     // Load last 1000 messages from this room
     try {
       const lastMessages = await Message.find({ room })
-        .sort({ timestamp: 1 }) // oldest first
-        .limit(1000);
+        .sort({ timestamp: -1 }) // newest first
+        .limit(500);
       socket.emit("messageHistory", lastMessages);
     } catch (err) {
       console.error("Error loading messages:", err);
