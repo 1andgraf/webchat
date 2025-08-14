@@ -647,6 +647,11 @@ button {
   animation: gradientShift 50s ease infinite;
 }
 
+.dark-theme .gifs-main {
+  background: #1e1e1eac;
+  border: 1px solid #333;
+}
+
 .dark-theme .card {
   background: #1e1e1eac;
   border: 2px solid #333;
@@ -776,6 +781,10 @@ button {
 #gif-logo {
   width: 40px;
   margin-top: 2px;
+}
+
+.dark-theme #gif-logo {
+  filter: brightness(10000%) contrast(0%);
 }
 
 .gifs:hover .gifs-main {
