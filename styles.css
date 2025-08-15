@@ -1,3 +1,24 @@
+html {
+  height: -webkit-fill-available;
+  background: url(./images/grain.svg),
+    linear-gradient(
+      270deg,
+      rgb(194, 175, 7),
+      rgb(173, 58, 58),
+      rgb(58, 173, 87),
+      rgb(7, 132, 194),
+      rgb(173, 58, 144),
+      rgb(194, 132, 7)
+    );
+  background-size: auto, 1200% 1200%;
+  background-position: center, 0% 50%;
+}
+
+body {
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}
+
 html,
 body {
   margin: 0;
