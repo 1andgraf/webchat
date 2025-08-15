@@ -15,7 +15,7 @@ body {
   justify-content: center;
   position: fixed;
   width: 100%;
-  background: url(./grain.svg),
+  background: url(./images//grain.svg),
     linear-gradient(
       270deg,
       rgb(194, 175, 7),
@@ -347,7 +347,7 @@ body {
   justify-content: center;
   position: fixed;
   width: 100%;
-  background: url(./grain.svg),
+  background: url(./images/grain.svg),
     linear-gradient(
       270deg,
       rgb(194, 175, 7),
@@ -758,10 +758,11 @@ button {
 
 .gifs-main {
   position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
   width: 435px;
   height: 350px;
-  top: 295px;
-  right: 710px;
   background: rgba(255, 255, 255, 0.876);
   border-radius: 20px;
   box-shadow: 0 6px 20px rgba(16, 24, 40, 0.06);
@@ -790,6 +791,74 @@ button {
 .gifs:hover .gifs-main {
   opacity: 1;
   visibility: visible;
-  transform: translateY(0);
+  transform: translateX(-50%) translateY(0);
   transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.gifs {
+  position: relative;
+}
+
+@media (max-width: 600px) {
+  .container {
+    width: 100%;
+    padding: 10px;
+    margin-top: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .card {
+    width: 75%;
+    padding: 15px;
+  }
+
+  .chat-all {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #chat-section {
+    width: 90%;
+    margin-left: 0;
+  }
+
+  .settings {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 15px;
+    padding-bottom: 30px;
+  }
+
+  .settings .setting-item {
+    margin-top: 0px;
+  }
+
+  #settings h1 {
+    font-size: 24px;
+    margin-bottom: 5px;
+    margin-top: 10px;
+  }
+
+  .messages {
+    height: 250px;
+  }
+
+  .avatar {
+    width: 24px;
+    height: 24px;
+  }
+
+  .gifs-main {
+    position: fixed;
+    width: 90%;
+    max-width: 400px;
+    height: 300px;
+    top: auto;
+    bottom: 20px;
+    right: 50%;
+    transform: translateX(50%) translateY(0);
+    border-radius: 15px;
+  }
 }

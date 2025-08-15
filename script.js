@@ -145,8 +145,8 @@ sendForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const text = (messageInput.value || "").trim();
 
-  if (text.length > 60) {
-    alert("Message too long! Please keep it under 60 characters.");
+  if (text.length > 18) {
+    alert("Message too long! Please keep it under 18 characters.");
     return;
   }
 
