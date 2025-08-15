@@ -17,6 +17,10 @@ html {
 body {
   min-height: 100vh;
   min-height: -webkit-fill-available;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 html,
@@ -27,22 +31,6 @@ body {
   width: 100%;
   font-family: sans-serif;
   color: rgb(54, 54, 54);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: url(./images/grain.svg),
-    linear-gradient(
-      270deg,
-      rgb(194, 175, 7),
-      rgb(173, 58, 58),
-      rgb(58, 173, 87),
-      rgb(7, 132, 194),
-      rgb(173, 58, 144),
-      rgb(194, 132, 7)
-    );
-  background-size: auto, 1200% 1200%;
-  background-position: center, 0% 50%;
-  animation: gradientShift 50s ease infinite;
   padding-top: env(safe-area-inset-top);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
