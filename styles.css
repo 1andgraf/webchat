@@ -1,6 +1,26 @@
+:root {
+  --chat-font-size: 16px;
+}
+
 html {
-  height: -webkit-fill-available;
-  background: url(./images/grain.svg),
+  background-color: rgb(230, 197, 36);
+}
+
+/* styles.css - simple styling */
+html,
+body {
+  overflow: hidden;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+  color: rgb(54, 54, 54);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  width: 100%;
+  background: url(./images//grain.svg),
     linear-gradient(
       270deg,
       rgb(194, 175, 7),
@@ -10,39 +30,16 @@ html {
       rgb(173, 58, 144),
       rgb(194, 132, 7)
     );
+
+  /* Size for each background separately */
   background-size: auto, 1200% 1200%;
+
+  /* Initial position for each background separately */
   background-position: center, 0% 50%;
-}
 
-body {
-  min-height: 100vh;
-  min-height: -webkit-fill-available;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  /* Animate only the gradient's background-position */
+  animation: gradientShift 50s ease infinite;
 }
-
-html,
-body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  width: 100%;
-  font-family: sans-serif;
-  color: rgb(54, 54, 54);
-  padding-top: env(safe-area-inset-top);
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
-  padding-bottom: env(safe-area-inset-bottom);
-  overflow: hidden;
-}
-
-:root {
-  --chat-font-size: 16px;
-}
-
-/* styles.css - simple styling */
 
 @keyframes gradientShift {
   0% {
@@ -340,6 +337,40 @@ select,
   height: 1px;
   width: 175px;
   background: white;
+}
+
+/* styles.css - simple styling */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+  color: rgb(54, 54, 54);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  width: 100%;
+  background: url(./images/grain.svg),
+    linear-gradient(
+      270deg,
+      rgb(194, 175, 7),
+      rgb(173, 58, 58),
+      rgb(58, 173, 87),
+      rgb(7, 132, 194),
+      rgb(173, 58, 144),
+      rgb(194, 132, 7)
+    );
+
+  /* Size for each background separately */
+  background-size: auto, 1200% 1200%;
+
+  /* Initial position for each background separately */
+  background-position: center, 0% 50%;
+
+  /* Animate only the gradient's background-position */
+  animation: gradientShift 50s ease infinite;
 }
 
 @keyframes gradientShift {
@@ -826,7 +857,7 @@ button {
   }
 
   .messages {
-    height: 180px;
+    height: 150px;
   }
 
   .avatar {
