@@ -1,13 +1,11 @@
-// server.js
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
 const mongoose = require("mongoose");
 
-// ----------------- MongoDB -----------------
 const MONGO_URI =
-  "mongodb+srv://1andgraf:1234@webchat.zslpi88.mongodb.net/?retryWrites=true&w=majority&appName=webchat"; // <-- replace with your MongoDB URI
+  "mongodb+srv://1andgraf:1234@webchat.zslpi88.mongodb.net/?retryWrites=true&w=majority&appName=webchat";
 mongoose
   .connect(MONGO_URI)
   .then(() => console.log("✅ Connected to MongoDB"))
@@ -25,7 +23,6 @@ const messageSchema = new mongoose.Schema({
 
 const Message = mongoose.model("Message", messageSchema);
 
-// ----------------- Express + Socket.IO -----------------
 const app = express();
 app.use(cors());
 
@@ -67,10 +64,9 @@ io.on("connection", (socket) => {
       message: `${socket.data.nickname} has joined the room.`,
     });
 
-    // Load last 1000 messages from this room
     try {
       const lastMessages = await Message.find({ room })
-        .sort({ timestamp: 1 }) // newest first
+        .sort({ timestamp: 1 })
         .limit(500);
       socket.emit("messageHistory", lastMessages);
     } catch (err) {
